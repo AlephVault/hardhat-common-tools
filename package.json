@@ -1,0 +1,28 @@
+{
+  "name": "hardhat-common-tools",
+  "version": "1.0.0",
+  "description": "A hardhat plugin providing common tools and functions for both ethers and viem projects",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Tests are not implemented for this package\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlephVault/hardhat-common-tools.git"
+  },
+  "keywords": [
+    "hardhat",
+    "common",
+    "tools"
+  ],
+  "author": "Luis Masuelli",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AlephVault/hardhat-common-tools/issues"
+  },
+  "homepage": "https://github.com/AlephVault/hardhat-common-tools#readme",
+  "peerDependencies": {
+    "hardhat": "^2.22.5",
+    "viem": "^2.17.1"
+  }
+}
