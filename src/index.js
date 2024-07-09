@@ -6,6 +6,7 @@ extendEnvironment((hre) => {
         hre.common.isAddress = (value) => {
             try {
                 hre.ethers.getAddress(value);
+                return true;
             } catch {
                 return false;
             }
@@ -13,7 +14,7 @@ extendEnvironment((hre) => {
         hre.common.getAddress = (signer) => signer.address;
         hre.common.getSigners = async () => (await hre.ethers.getSigners());
         hre.common.getChainId = async () => {
-            return (await hre.ethers.provider.getNetwork()).chainId;
+            return BigInt((await hre.ethers.provider.getNetwork()).chainId);
         };
     } else if (hre.viem) {
         const {isAddress} = require("viem");
@@ -25,7 +26,7 @@ extendEnvironment((hre) => {
             if (!signers || !signers.length) {
                 throw new Error("It seems that this network does not have any configured account");
             }
-            return await signers[0].getChainId();
+            return BigInt(await signers[0].getChainId());
         };
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
