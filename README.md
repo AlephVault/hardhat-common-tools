@@ -47,3 +47,13 @@ The provided methods are the following:
    ```javascript
    const isAddress = await hre.common.isAddress(value);
    ```
+
+# More common functions
+
+1. Resetting the deployments (only present when `@nomicfoundation/hardhat-ignition` and the corresponding
+   ignition plugin is installed):
+
+   ```javascript
+   // provided hre.ignition exists:
+   await hre.ignition.resetDeployment();
+   ```
