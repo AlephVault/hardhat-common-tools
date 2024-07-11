@@ -22,6 +22,61 @@ async function resetDeployment(hre, deploymentId) {
     }
 }
 
+/**
+ * Inspects the ignition addresses for a deployment id and retrieves
+ a contract instance from a given deployed contract (future) id.
+ * @param hre The hardhat runtime environment.
+ * @param deploymentId The deployment id.
+ * @Param contractId The deployed contract (future) id.
+ * @return {Promise<*>} A contract instance (async function).
+ */
+async function getDeployedContract(hre, deploymentId, contractId) {
+    // 1. Determine the actual deployment id.
+    const chainId = await hre.common.getChainId();
+    deploymentId ||= `chain-${chainId}`;
+
+    // 2. Determine the path and load the deployed addresses, if able.
+    let addresses = {};
+    try {
+        const fullPath = path.resolve(
+            hre.config.paths.root, "ignition", "deployments", deploymentId, "deployed_addresses.json"
+        );
+        addresses = JSON.parse(fs.readFileSync(fullPath, {encoding: 'utf8'}));
+    } catch(e) {}
+
+    // 3. From the deployed addresses, get the address we want.
+    const address = addresses[contractId];
+    if (!address) {
+        throw new Error(
+            `It seems that the contract ${contractId} is not deployed in the ` +
+            `deployment id ${deploymentId}. Ensure the deployment is actually ` +
+            "done for that contract."
+        )
+    }
+
+    // 4. Now, load the artifact and get its ABI:
+    let artifact = {};
+    try {
+        const artifactPath = path.resolve(
+            hre.config.paths.root, "ignition", "deployments", deploymentId, "artifacts", contractId + ".json"
+        );
+        artifact = JSON.parse(fs.readFileSync(artifactPath, {encoding: 'utf8'}));
+    } catch(e) {}
+    const abi = artifact.abi;
+    if (!abi || !abi.length) {
+        throw new Error(
+            `The contract data for the contract id ${contractId} in the deployment `
+            `id ${deploymentId} seems to be corrupted. Either you're in serious `
+            `troubles or this is your local network and you just need to redeploy `
+            `everything to make this work. Keep in touch with your team if this is `
+            `related to corrupted contract deployment data in a mainnet.`
+        );
+    }
+
+    // 5. Instantiate the contract by using the proper provider.
+    return await hre.common.getContractAt(abi, address);
+}
+
 extendEnvironment((hre) => {
     hre.common ||= {};
     if (hre.ethers) {
@@ -112,5 +167,8 @@ extendEnvironment((hre) => {
     hre.common.getSigner = async (idx) => (await hre.common.getSigners())[idx];
     if (hre.ignition && !hre.ignition.resetDeployment) {
         hre.ignition.resetDeployment = (deploymentId) => resetDeployment(hre, deploymentId);
+        hre.ignition.getDeployedContract = (deploymentId, contractId) => getDeployedContract(
+            hre, deploymentId, contractId
+        );
     }
 });
