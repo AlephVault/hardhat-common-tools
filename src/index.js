@@ -106,8 +106,24 @@ extendEnvironment((hre) => {
             }
             return contract;
         }
-        hre.common.send = async (contract, method, args, account, txOpts) => {
-            // TODO implement.
+        hre.common.send = async (contract, method, args, txOpts) => {
+            let {account, from, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas, value, eip155} = txOpts || {};
+            const newOpts = {
+                gasLimit: gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas,
+                value, chainId: eip155 ? (await hre.common.getChainId()) : undefined
+            };
+            if (account !== undefined) {
+                if (typeof account === "bigint") {
+                    account = account.toNumber();
+                }
+                if (typeof account === "number") {
+                    account = await hre.common.getSigner(Number(account));
+                }
+                contract = contract.connect(account);
+            } else if (from) {
+                newOpts.from = from;
+            }
+            return await contract[method](...args, newOpts);
         }
         hre.common.call = async (contract, method, args) => {
             await contract[method](...args);
@@ -155,8 +171,24 @@ extendEnvironment((hre) => {
                 });
             }
         }
-        hre.common.send = async (contract, method, args, account, txOpts) => {
-            // TODO implement.
+        hre.common.send = async (contract, method, args, txOpts) => {
+            let {account, from, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas, value, eip155} = txOpts || {};
+            const newOpts = {
+                gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas,
+                value, chainId: eip155 ? (await hre.common.getChainId()) : undefined
+            };
+            if (account !== undefined) {
+                if (typeof account === "bigint") {
+                    account = account.toNumber();
+                }
+                if (typeof account === "number") {
+                    account = await hre.common.getSigner(Number(account));
+                }
+                return await contract.write[method](account, args, newOpts);
+            } else if (from) {
+                newOpts.from = from;
+            }
+            return await contract.write[method](args, newOpts);
         }
         hre.common.call = async (contract, method, args) => {
             await contract.read[method](args);
