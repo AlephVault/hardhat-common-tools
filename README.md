@@ -48,6 +48,48 @@ The provided methods are the following:
    const isAddress = await hre.common.isAddress(value);
    ```
 
+5. Instantiating an existing contract:
+
+   ```javascript
+   const contract = await hre.common.getContractAt("MyContract", "0xTheContractAddress");
+   ```
+
+6. Instantiating an existing ignition-deployed contract (if an ignition plugin is installed):
+
+   ```javascript
+   await hre.ignition.getDeployedContract("MyIgnitionModule#MyContract");
+   // Or with an explicit deployment id:
+   await hre.ignition.getDeployedContract("MyIgnitionModule#MyContract", "someDeploymentId");
+   ```
+
+7. Invoking a view/pure method via `call`:
+
+   ```javascript
+   // Invoking a method via `call` with arguments (they come in an array).
+   const result = await hre.common.call(contract, "mymethod", [arg1, arg2, ...whatever]);
+   ```
+
+8. Invoking a view/pure method via `send`:
+
+   ```javascript
+   // Invoking a method via `send` (transactionally) with arguments (they come in an array).
+   // By default:
+   await hre.common.send(contract, "withdraw", []);
+   // Choosing an account:
+   await hre.common.send(contract, "withdraw", [], {account: await hre.common.getSigner(0)});
+   // All the transaction options (all of them are optional):
+   await hre.common.send(contract, "withdraw", [], {
+       account: await hre.common.getSigner(0),
+       from: "0xAnAddress",
+       gas: 400000, // A gas amount.
+       gasPrice: 400000000000, // A pre-EIP-1559 gas price.
+       maxFeePerGas: 400000000000, // An EIP-1559 max gas price.
+       maxPriorityFeePerGas: 100000000000, // An EIP-1559 max priority price.
+       value: 1000000000000000000, // A payment of 1 eth.
+       eip155: true|false, // Whether to avoid a replay-attack.
+   }); 
+   ```
+
 # More common functions
 
 1. Resetting the deployments (only present when `@nomicfoundation/hardhat-ignition` and the corresponding
@@ -57,3 +99,4 @@ The provided methods are the following:
    // provided hre.ignition exists:
    await hre.ignition.resetDeployment();
    ```
+   
