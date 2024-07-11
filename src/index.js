@@ -26,11 +26,11 @@ async function resetDeployment(hre, deploymentId) {
  * Inspects the ignition addresses for a deployment id and retrieves
  a contract instance from a given deployed contract (future) id.
  * @param hre The hardhat runtime environment.
- * @param deploymentId The deployment id.
  * @Param contractId The deployed contract (future) id.
+ * @param deploymentId The deployment id.
  * @return {Promise<*>} A contract instance (async function).
  */
-async function getDeployedContract(hre, deploymentId, contractId) {
+async function getDeployedContract(hre, contractId, deploymentId) {
     // 1. Determine the actual deployment id.
     const chainId = await hre.common.getChainId();
     deploymentId ||= `chain-${chainId}`;
@@ -167,8 +167,8 @@ extendEnvironment((hre) => {
     hre.common.getSigner = async (idx) => (await hre.common.getSigners())[idx];
     if (hre.ignition && !hre.ignition.resetDeployment) {
         hre.ignition.resetDeployment = (deploymentId) => resetDeployment(hre, deploymentId);
-        hre.ignition.getDeployedContract = (deploymentId, contractId) => getDeployedContract(
-            hre, deploymentId, contractId
+        hre.ignition.getDeployedContract = (contractId, deploymentId) => getDeployedContract(
+            hre, contractId, deploymentId
         );
     }
 });
