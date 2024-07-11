@@ -51,6 +51,12 @@ extendEnvironment((hre) => {
             }
             return contract;
         }
+        hre.common.send = async (contract, method, args, account, txOpts) => {
+            // TODO implement.
+        }
+        hre.common.call = async (contract, method, args) => {
+            await contract[method](...args);
+        }
     } else if (hre.viem) {
         const {isAddress, getContract} = require("viem");
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
@@ -93,6 +99,12 @@ extendEnvironment((hre) => {
                     abi: artifactOrAbi,
                 });
             }
+        }
+        hre.common.send = async (contract, method, args, account, txOpts) => {
+            // TODO implement.
+        }
+        hre.common.call = async (contract, method, args) => {
+            await contract.read[method](args);
         }
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
