@@ -38,8 +38,21 @@ extendEnvironment((hre) => {
         hre.common.getChainId = async () => {
             return BigInt((await hre.ethers.provider.getNetwork()).chainId);
         };
+        hre.common.getContractAt = async (artifactOrAbi, address, account) => {
+            let contract = await hre.ethers.getContractAt(artifactOrAbi, address);
+            if (typeof account === "bigint") {
+                account = account.toNumber();
+            }
+            if (typeof account === "number") {
+                account = await hre.common.getSigner(Number(account));
+            }
+            if (account) {
+                contract = contract.connect(account);
+            }
+            return contract;
+        }
     } else if (hre.viem) {
-        const {isAddress} = require("viem");
+        const {isAddress, getContract} = require("viem");
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
         hre.common.getAddress = (signer) => signer.account.address;
         hre.common.getSigners = async () => (await hre.viem.getWalletClients());
@@ -50,6 +63,37 @@ extendEnvironment((hre) => {
             }
             return BigInt(await signers[0].getChainId());
         };
+        hre.common.getContractAt = async (artifactOrAbi, address, account) => {
+            if (typeof account === "number" || typeof account === "bigint") {
+                account = await hre.common.getSigner(Number(account));
+            }
+
+            if (typeof artifactOrAbi === "string") {
+                if (account) {
+                    const handlerArgs = {client: {wallet: account}};
+                    return await hre.viem.getContractAt(artifactOrAbi, address, handlerArgs);
+                } else {
+                    return await hre.viem.getContractAt(artifactOrAbi, address);
+                }
+            } else {
+                const publicClient = await hre.viem.getPublicClient(hre.network.provider);
+                const walletClients = await hre.common.getSigners();
+                if (!walletClients.length) {
+                    const {DefaultWalletClientNotFoundError} =
+                        await import("@nomicfoundation/hardhat-viem/internal/errors.js");
+                    throw new DefaultWalletClientNotFoundError(hre.network.name);
+                }
+                const walletClient = walletClients[0];
+                return getContract({
+                    address,
+                    client: {
+                        public: publicClient,
+                        wallet: walletClient,
+                    },
+                    abi: artifactOrAbi,
+                });
+            }
+        }
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
     }
