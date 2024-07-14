@@ -128,6 +128,7 @@ extendEnvironment((hre) => {
         hre.common.call = async (contract, method, args) => {
             await contract[method](...args);
         }
+        hre.common.getContractAddress = (contract) => contract.target;
     } else if (hre.viem) {
         const {isAddress, getContract} = require("viem");
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
@@ -193,6 +194,7 @@ extendEnvironment((hre) => {
         hre.common.call = async (contract, method, args) => {
             await contract.read[method](args);
         }
+        hre.common.getContractAddress = (contract) => contract.address;
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
     }
