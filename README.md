@@ -90,6 +90,14 @@ The provided methods are the following:
    }); 
    ```
 
+9. Getting the address of a contract instance.
+
+   ```javascript
+   // Get a contract somehow.
+   const contract = await hre.ignition.getDeployedContract("SomeModule#SomeContract");
+   const address = hre.common.getContractAddress(contract);
+   ```
+
 # More common functions
 
 1. Resetting the deployments (only present when `@nomicfoundation/hardhat-ignition` and the corresponding
