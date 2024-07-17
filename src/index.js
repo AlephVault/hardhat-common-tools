@@ -126,7 +126,7 @@ extendEnvironment((hre) => {
             return await contract[method](...args, newOpts);
         }
         hre.common.call = async (contract, method, args) => {
-            await contract[method](...args);
+            return await contract[method](...args);
         }
         hre.common.getContractAddress = (contract) => contract.target;
     } else if (hre.viem) {
@@ -192,7 +192,7 @@ extendEnvironment((hre) => {
             return await contract.write[method](args, newOpts);
         }
         hre.common.call = async (contract, method, args) => {
-            await contract.read[method](args);
+            return await contract.read[method](args);
         }
         hre.common.getContractAddress = (contract) => contract.address;
     } else {
