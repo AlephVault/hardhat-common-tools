@@ -129,8 +129,9 @@ extendEnvironment((hre) => {
             return await contract[method](...args);
         }
         hre.common.getContractAddress = (contract) => contract.target;
+        hre.common.keccak256 = (text) => hre.ethers.keccak256(hre.ethers.toUtf8Bytes(text));
     } else if (hre.viem) {
-        const {isAddress, getContract} = require("viem");
+        const {isAddress, getContract, keccak256} = require("viem");
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
         hre.common.getAddress = (signer) => signer.account.address;
         hre.common.getSigners = async () => (await hre.viem.getWalletClients());
@@ -195,6 +196,7 @@ extendEnvironment((hre) => {
             return await contract.read[method](args);
         }
         hre.common.getContractAddress = (contract) => contract.address;
+        hre.common.keccak256 = (text) => keccak256(text);
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
     }
