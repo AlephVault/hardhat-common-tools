@@ -5,7 +5,7 @@ A hardhat plugin providing common tools and functions for both ethers and viem p
 Run this command to install it from NPM:
 
 ```shell
-npm install --save-dev hardhat-common-tools@^1.3.0
+npm install --save-dev hardhat-common-tools@^1.4.0
 ```
 
 # Usage
@@ -98,6 +98,13 @@ The provided methods are the following:
    const address = hre.common.getContractAddress(contract);
    ```
 
+10. Computing a keccak256 over a UTF-8 string.
+
+    ```javascript
+    const hash = hre.ignition.keccak256("Hello World");
+    // '0x592fa743889fc7f92ac2a37bb1f5ba1daf2a5c84741ca0e0061d243a2e6707ba'
+    ```
+
 # More common functions
 
 1. Resetting the deployments (only present when `@nomicfoundation/hardhat-ignition` and the corresponding
@@ -107,4 +114,3 @@ The provided methods are the following:
    // provided hre.ignition exists:
    await hre.ignition.resetDeployment();
    ```
-   
