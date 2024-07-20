@@ -48,6 +48,31 @@ async function normalizeTransferTxOptions(txOpts) {
 }
 
 /**
+ * Given an account index, normalizes it to get an account.
+ * If undefined, it uses the default one.
+ * @param hre The hardhat runtime environment.
+ * @param account The account index.
+ * @returns {Promise<void>} The signer (async function).
+ */
+async function normalizeSigner(hre, account) {
+    let signer = await hre.common.getSigner(0);
+
+    if (account !== undefined) {
+        if (typeof account === "bigint") {
+            account = account.toNumber();
+        }
+
+        if (typeof account === "number") {
+            signer = await hre.common.getSigner(account);
+        } else {
+            signer = account;
+        }
+    }
+
+    return signer;
+}
+
+/**
  * Inspects the ignition addresses for a deployment id and retrieves
  a contract instance from a given deployed contract (future) id.
  * @param hre The hardhat runtime environment.
@@ -142,7 +167,7 @@ extendEnvironment((hre) => {
                     account = account.toNumber();
                 }
                 if (typeof account === "number") {
-                    account = await hre.common.getSigner(Number(account));
+                    account = await hre.common.getSigner(account);
                 }
                 contract = contract.connect(account);
             } else if (from) {
@@ -156,6 +181,17 @@ extendEnvironment((hre) => {
         hre.common.getContractAddress = (contract) => contract.target;
         hre.common.keccak256 = (text) => hre.ethers.keccak256(hre.ethers.toUtf8Bytes(text));
         hre.common.getBalance = (address) => hre.ethers.provider.getBalance(address);
+        hre.common.transfer = async (to, txOpts) => {
+            txOpts = await normalizeTransferTxOptions(txOpts);
+            // `from` will not be supported.
+            let {account, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas, value, eip155} = txOpts || {};
+            const newOpts = {
+                to, gasLimit: gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas,
+                value, chainId: eip155 ? (await hre.common.getChainId()) : undefined
+            };
+            let signer = await normalizeSigner(hre, account);
+            return await signer.sendTransaction(newOpts);
+        }
     } else if (hre.viem) {
         const {isAddress, getContract, keccak256} = require("viem");
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
@@ -226,6 +262,17 @@ extendEnvironment((hre) => {
         hre.common.getBalance = async (address) => await (
             await hre.viem.getPublicClient(hre.network.provider)
         ).getBalance({address});
+        hre.common.transfer = async (to, txOpts) => {
+            txOpts = await normalizeTransferTxOptions(txOpts);
+            // `from` will not be supported.
+            let {account, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas, value, eip155} = txOpts || {};
+            const newOpts = {
+                to, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas,
+                value, chainId: eip155 ? (await hre.common.getChainId()) : undefined
+            };
+            let signer = await normalizeSigner(hre, account);
+            return await signer.sendTransaction(newOpts);
+        }
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
     }
