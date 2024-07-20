@@ -130,6 +130,7 @@ extendEnvironment((hre) => {
         }
         hre.common.getContractAddress = (contract) => contract.target;
         hre.common.keccak256 = (text) => hre.ethers.keccak256(hre.ethers.toUtf8Bytes(text));
+        hre.common.getBalance = (address) => hre.ethers.provider.getBalance(address);
     } else if (hre.viem) {
         const {isAddress, getContract, keccak256} = require("viem");
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
@@ -197,6 +198,9 @@ extendEnvironment((hre) => {
         }
         hre.common.getContractAddress = (contract) => contract.address;
         hre.common.keccak256 = (text) => keccak256(text);
+        hre.common.getBalance = async (address) => await (
+            await hre.viem.getPublicClient(hre.network.provider)
+        ).getBalance({address});
     } else {
         throw new Error("It seems that neither ethers nor viem is installed in this project");
     }
