@@ -23,6 +23,31 @@ async function resetDeployment(hre, deploymentId) {
 }
 
 /**
+ * Normalizes the options for a transfer operation.
+ * @param txOpts The transaction options or amount.
+ * @returns {Promise<{}|{value: (string|number|bigint)}>}
+ */
+async function normalizeTransferTxOptions(txOpts) {
+    // This normalization only makes sense for TRANSFER operations,
+    // where a numeric value is required.
+
+    if (txOpts === undefined || txOpts === null) {
+        txOpts = {};
+    }
+    if (typeof txOpts === "string" || typeof txOpts === "number" || typeof txOpts === "bigint") {
+        txOpts = {value: txOpts}
+    }
+
+    try {
+        txOpts.value = BigInt(txOpts.value);
+    } catch {
+        throw new Error("A non-empty valid value must be specified");
+    }
+
+    return txOpts;
+}
+
+/**
  * Inspects the ignition addresses for a deployment id and retrieves
  a contract instance from a given deployed contract (future) id.
  * @param hre The hardhat runtime environment.
