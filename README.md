@@ -5,7 +5,7 @@ A hardhat plugin providing common tools and functions for both ethers and viem p
 Run this command to install it from NPM:
 
 ```shell
-npm install --save-dev hardhat-common-tools@^1.4.0
+npm install --save-dev hardhat-common-tools@^1.5.0
 ```
 
 # Usage
@@ -103,6 +103,32 @@ The provided methods are the following:
     ```javascript
     const hash = hre.ignition.keccak256("Hello World");
     // '0x592fa743889fc7f92ac2a37bb1f5ba1daf2a5c84741ca0e0061d243a2e6707ba'
+    ```
+
+11. Getting the balance of an address:
+
+    ```javascript
+    const balance = await hre.common.getBalance("0xAnAddress");
+    ```
+
+12. Transferring native tokens to another account:
+
+    ```javascript
+    // Case 1: Only an amount, and everything else by default.
+    const tx = await hre.common.transfer("0xAnAddress", 1000000000000000000);
+
+    // Case 2: Explicit arguments (`from` is not supported here;
+    //         use `account` argument). All the arguments are
+    //         optional.
+    const tx = await hre.common.transfer("0xAnAddress", {
+        account: await hre.common.getSigner(0),
+        gas: 400000, // A gas amount.
+        gasPrice: 400000000000, // A pre-EIP-1559 gas price.
+        maxFeePerGas: 400000000000, // An EIP-1559 max gas price.
+        maxPriorityFeePerGas: 100000000000, // An EIP-1559 max priority price.
+        value: 1000000000000000000, // A payment of 1 eth.
+        eip155: true|false, // Whether to avoid a replay-attack.
+    })
     ```
 
 # More common functions
