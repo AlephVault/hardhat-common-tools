@@ -173,9 +173,13 @@ extendEnvironment((hre) => {
             } else if (from) {
                 newOpts.from = from;
             }
+            // The method might be "foo" or "foo(type1,type2,...)".
+            // It will be respected both ways.
             return await contract[method](...args, newOpts);
         }
         hre.common.call = async (contract, method, args) => {
+            // The method might be "foo" or "foo(type1,type2,...)".
+            // It will be respected both ways.
             return await contract[method](...args);
         }
         hre.common.getContractAddress = (contract) => contract.target;
@@ -248,14 +252,20 @@ extendEnvironment((hre) => {
                 if (typeof account === "number") {
                     account = await hre.common.getSigner(Number(account));
                 }
-                return await contract.write[method](account, args, newOpts);
+                // The method might be "foo" or "foo(type1,type2,...)".
+                // It will keep only the name.
+                return await contract.write[method.split("(")[0]](account, args, newOpts);
             } else if (from) {
                 newOpts.from = from;
             }
-            return await contract.write[method](args, newOpts);
+            // The method might be "foo" or "foo(type1,type2,...)".
+            // It will keep only the name.
+            return await contract.write[method.split("(")[0]](args, newOpts);
         }
         hre.common.call = async (contract, method, args) => {
-            return await contract.read[method](args);
+            // The method might be "foo" or "foo(type1,type2,...)".
+            // It will keep only the name.
+            return await contract.read[method.split("(")[0]](args);
         }
         hre.common.getContractAddress = (contract) => contract.address;
         hre.common.keccak256 = (text) => keccak256(text);
