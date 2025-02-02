@@ -24,11 +24,11 @@ async function fetchLogs(
     if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
 
     // Prepare topics array (first topic is event signature).
-    const topics = [eventFragment.id, ...encodeTopics(hre, eventFragment, indexedArgs)];
+    const topics = [hre.ethers.id(eventFragment.format()), ...encodeTopics(hre, eventFragment, indexedArgs)];
 
     // Construct the filter.
     const filter = {
-        address: contract.address,
+        address: contract.target,
         fromBlock: fromBlock ?? 0,
         toBlock: toBlock ?? "latest",
         topics,
@@ -53,14 +53,10 @@ async function watchLogs(
     const eventFragment = iface.getEvent(eventName);
     if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
 
-    const filter = [
-        eventFragment.id, contract.address,
-        encodeTopics(hre, eventFragment, indexedArgs)
-    ];
-
-    console.log("Filter is:", filter);
-
-    return contract.on(filter, (...args) => {
+    return contract.on([
+        hre.ethers.id(eventFragment.format()),
+        ...encodeTopics(hre, eventFragment, indexedArgs)
+    ], (...args) => {
         const subLength = args.length - 1;
         const rawLog = args[subLength].log;
         const log = normalizeLog(iface.parseLog(rawLog));
