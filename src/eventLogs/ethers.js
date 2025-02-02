@@ -6,7 +6,7 @@
  * @param fromBlock The start block. Will be 0 if not given.
  * @param toBlock The end block. Will be "latest" if not given.
  * @param indexedArgs The indexed arguments. They must not be
- * encoded, for they will later.
+ * encoded, for they will later be.
  * @returns {Promise<*>} An array of logs (async function).
  */
 async function fetchLogs(
@@ -41,28 +41,58 @@ async function fetchLogs(
     return logs.map((log) => normalizeLog(iface.parseLog(log)));
 }
 
+/**
+ * Starts watching the logs for a given event and filtering.
+ * @param hre The hardhat runtime environment.
+ * @param contract The contract instance.
+ * @param eventName The name, or specification, of the event.
+ * @param indexedArgs The indexed arguments. They must not be
+ * encoded, for they will later be. Also, instead, the callback
+ * can be given if no indexed arguments are intended.
+ * @param callback The callback, if indexed arguments are given.
+ * @returns {Promise<*>} The generated filter (async function).
+ */
 async function watchLogs(
     hre,
     contract, eventName, indexedArgs,
     callback
 ) {
     const iface = contract.interface;
+    if (callback === undefined) {
+        callback = indexedArgs;
+        indexedArgs = undefined;
+    }
     indexedArgs ||= [];
 
     // Find event details in ABI.
     const eventFragment = iface.getEvent(eventName);
     if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
 
-    return contract.on([
+    const filter = [
         hre.ethers.id(eventFragment.format()),
         ...encodeTopics(hre, eventFragment, indexedArgs)
-    ], (...args) => {
-        const subLength = args.length - 1;
-        const rawLog = args[subLength].log;
-        const log = normalizeLog(iface.parseLog(rawLog));
-        args = args.slice(0, subLength);
-        callback(args, log);
+    ];
+    await contract.on(filter, (...args) => {
+        const lastIndex = args.length - 1;
+        callback(normalizeLog(iface.parseLog(args[lastIndex].log)));
     });
+    return filter;
+}
+
+/**
+ * Stops a watch.
+ * @param hre The hardhat runtime environment.
+ * @param contract The contract instance.
+ * @param filter The filter returned by watchLogs, the event name,
+ * or the event specification.
+ * @param callback The used callback. Optional. If not given, all
+ * the listeners will be turned off for the used filter.
+ * @returns {Promise<void>}
+ */
+async function unWatchLogs(
+    hre, contract, filter, callback
+) {
+    await contract.off(filter, callback);
 }
 
 /**
@@ -146,5 +176,5 @@ function encodeIndexedValue(hre, type, value, cannotBeArrayOrNull) {
 }
 
 module.exports = {
-    fetchLogs, watchLogs
+    fetchLogs, watchLogs, unWatchLogs
 }
