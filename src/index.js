@@ -130,7 +130,7 @@ async function getDeployedContract(hre, contractId, deploymentId) {
 extendEnvironment((hre) => {
     hre.common ||= {};
     if (hre.ethers) {
-        const {fetchLogs} = require("./eventLogs/ethers");
+        const {fetchLogs, watchLogs} = require("./eventLogs/ethers");
 
         hre.common.isAddress = (value) => {
             try {
@@ -185,6 +185,7 @@ extendEnvironment((hre) => {
             return await contract[method](...args);
         }
         hre.common.getLogs = (...args) => fetchLogs(hre, ...args);
+        hre.common.watchLogs = (...args) => watchLogs(hre, ...args);
         hre.common.getContractAddress = (contract) => contract.target;
         hre.common.keccak256 = (text) => hre.ethers.keccak256(hre.ethers.toUtf8Bytes(text));
         hre.common.getBalance = (address) => hre.ethers.provider.getBalance(address);
