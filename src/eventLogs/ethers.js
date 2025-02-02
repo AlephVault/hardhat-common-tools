@@ -16,14 +16,15 @@ async function fetchLogs(
     indexedArgs
 ) {
     const provider = hre.ethers.provider;
+    const iface = contract.interface;
     indexedArgs ||= [];
 
     // Find event details in ABI.
-    const eventFragment = contract.interface.getEvent(eventName);
+    const eventFragment = iface.getEvent(eventName);
     if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
 
     // Prepare topics array (first topic is event signature).
-    const topics = [contract.interface.encodeFilterTopics(eventFragment, indexedArgs)];
+    const topics = [iface.encodeFilterTopics(eventFragment, indexedArgs)];
 
     // Construct the filter.
     const filter = {
@@ -37,7 +38,7 @@ async function fetchLogs(
     const logs = await provider.getLogs(filter);
 
     // Decode logs into readable event data.
-    return logs.map(normalizeLog);
+    return logs.map((log) => normalizeLog(iface.parseLog(log)));
 }
 
 /**
