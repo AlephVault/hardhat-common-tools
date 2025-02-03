@@ -203,6 +203,8 @@ extendEnvironment((hre) => {
         }
     } else if (hre.viem) {
         const {isAddress, getContract, keccak256} = require("viem");
+        const {fetchLogs, watchLogs, unWatchLogs} = require("./eventLogs/viem");
+
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
         hre.common.getAddress = (signer) => signer.account.address;
         hre.common.getSigners = async () => (await hre.viem.getWalletClients());
@@ -272,6 +274,9 @@ extendEnvironment((hre) => {
             // It will keep only the name.
             return await contract.read[method.split("(")[0]](args);
         }
+        hre.common.getLogs = (...args) => fetchLogs(hre, ...args);
+        hre.common.watchLogs = (...args) => watchLogs(hre, ...args);
+        hre.common.unWatchLogs = (...args) => unWatchLogs(hre, ...args);
         hre.common.getContractAddress = (contract) => contract.address;
         hre.common.keccak256 = (text) => keccak256(text);
         hre.common.getBalance = async (address) => await (
