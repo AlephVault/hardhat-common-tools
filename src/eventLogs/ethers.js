@@ -38,7 +38,7 @@ async function fetchLogs(
     const logs = await provider.getLogs(filter);
 
     // Decode logs into readable event data.
-    return logs.map((log) => normalizeLog(iface.parseLog(log)));
+    return logs.map((entry) => normalizeLog(iface, entry));
 }
 
 /**
@@ -74,7 +74,7 @@ async function watchLogs(
     ];
     await contract.on(filter, (...args) => {
         const lastIndex = args.length - 1;
-        callback(normalizeLog(iface.parseLog(args[lastIndex].log)));
+        callback(normalizeLog(iface, args[lastIndex].log));
     });
     return filter;
 }
@@ -99,20 +99,30 @@ async function unWatchLogs(
  * Normalizes an event log to a standard format, so it becomes
  * a normal facade/adapter to the end user, although the `native`
  * field will still remain specific.
- * @param log The native log to normalize.
- * @returns {{args: {}, native, name}} An object with the result,
- * being {args, native, name} where `name` is the name part of
- * the event, `native` is the event itself, and `args` is the
- * set of arguments passed to the event, both by key and by index.
+ * @param iface The interface to use for decoding.
+ * @param entry The native entry to normalize.
+ * @returns {{args: {}, native, name, blockNumber, blockHash, transactionIndex, transactionHash, logIndex}}
+ * An object with the result, being {args, native, name} where `name` is the name part of the event,
+ * `native` is the event itself, and `args` is the set of arguments passed to the event, both by key
+ * and by index.
  */
-function normalizeLog(log) {
+function normalizeLog(iface, entry) {
+    const log = iface.parseLog(entry);
     const argKeys = log.fragment.inputs.map(i => i.name);
     const args = {};
     argKeys.forEach((key, index) => {
         args[key] = log.args[key]
         args[index] = log.args[index]
     });
-    return {name: log.name, args, native: log};
+    return {
+        name: log.name, args,
+        blockNumber: entry.blockNumber,
+        blockHash: entry.blockHash,
+        transactionIndex: entry.transactionIndex,
+        transactionHash: entry.transactionHash,
+        logIndex: entry.index,
+        native: entry
+    };
 }
 
 // Encodes the given values to be used as topics.
