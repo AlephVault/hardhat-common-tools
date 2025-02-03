@@ -72,11 +72,12 @@ async function watchLogs(
         hre.ethers.id(eventFragment.format()),
         ...encodeTopics(hre, eventFragment, indexedArgs)
     ];
-    await contract.on(filter, (...args) => {
+    const wrappedCallback = (...args) => {
         const lastIndex = args.length - 1;
         callback(normalizeLog(iface, args[lastIndex].log));
-    });
-    return () => contract.off(filter, callback);
+    };
+    await contract.on(filter, wrappedCallback);
+    return async () => await contract.off(filter, wrappedCallback);
 }
 
 /**
