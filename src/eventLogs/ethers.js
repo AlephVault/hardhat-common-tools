@@ -132,7 +132,7 @@ function encodeTopics(hre, eventFragment, indexedArgs) {
     let index = 0;
     for (const param of eventFragment.inputs) {
         if (param.indexed) {
-            const value = indexedArgs[index++];
+            const value = indexedArgs[eventFragment.name] ?? indexedArgs[index++];
             if (value !== undefined) {
                 topics.push(encodeIndexedValue(hre, param.type, value));
             } else {
