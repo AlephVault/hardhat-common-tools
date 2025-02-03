@@ -51,6 +51,11 @@ async function watchLogs(
     callback
 ) {
     const client = await hre.viem.getPublicClient();
+    if (callback === undefined) {
+        callback = indexedArgs;
+        indexedArgs = undefined;
+    }
+    indexedArgs ||= [];
 
     // Parse event ABI dynamically.
     let eventAbi = getEventAbi(contract, eventName);
