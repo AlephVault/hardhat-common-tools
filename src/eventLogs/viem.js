@@ -17,9 +17,61 @@ async function fetchLogs(
     fromBlock, toBlock,
     indexedArgs
 ) {
-    // Extract the client from the contract instance.
     const client = await hre.viem.getPublicClient();
 
+    // Parse event ABI dynamically.
+    let eventAbi = getEventAbi(contract, eventName);
+
+    let indexedArgsObject = normalizeIndexedArgs(indexedArgs || []);
+
+    // Prepare the filter arguments and get the logs.
+    const filter = {
+        address: contract.address, event: eventAbi,
+        fromBlock: BigInt(fromBlock ?? 0n),
+        toBlock: (toBlock ?? null) === null ? "latest" : BigInt(toBlock),
+        args: indexedArgsObject
+    };
+    return (await client.getLogs(filter)).map(e => normalizeLog(eventAbi, e));
+}
+
+/**
+ * Starts watching the logs for a given event and filtering.
+ * @param hre The hardhat runtime environment.
+ * @param contract The contract instance.
+ * @param eventName The name, or specification, of the event.
+ * @param indexedArgs The indexed arguments. They must not be
+ * encoded, for they will later be. Also, instead, the callback
+ * can be given if no indexed arguments are intended.
+ * @param callback The callback, if indexed arguments are given.
+ * @returns {Promise<*>} A function to un-watch this watch (async function).
+ */
+async function watchLogs(
+    hre,
+    contract, eventName, indexedArgs,
+    callback
+) {
+    const client = await hre.viem.getPublicClient();
+
+    // Parse event ABI dynamically.
+    let eventAbi = getEventAbi(contract, eventName);
+
+    return client.watchEvent({
+        address: contract.address, event: eventAbi,
+        args: normalizeIndexedArgs(indexedArgs || []),
+        onLogs: (logs) => {
+            logs.forEach(log => {
+                try {
+                    callback(log);
+                } catch (e) {
+                    console.error(e);
+                }
+            })
+        },
+    });
+}
+
+// Gets the Abi entry for an event name in a contract.
+function getEventAbi(contract, eventName) {
     // Parse event ABI dynamically.
     let eventAbi;
     if (!eventName.includes("(")) {
@@ -47,7 +99,11 @@ async function fetchLogs(
 
         eventAbi = parsedAbiItem;
     }
+    return eventAbi;
+}
 
+// Converts the indexed arguments to an object.
+function normalizeIndexedArgs(indexedArgs) {
     let indexedArgsObject = {};
     if (Array.isArray(indexedArgs)) {
         // Converting the array indexed args to an object.
@@ -68,84 +124,7 @@ async function fetchLogs(
     } else {
         indexedArgsObject = indexedArgs ?? {};
     }
-
-    // Prepare the filter arguments and get the logs.
-    const filter = {
-        address: contract.address, event: eventAbi,
-        fromBlock: BigInt(fromBlock ?? 0n),
-        toBlock: (toBlock ?? null) === null ? "latest" : BigInt(toBlock),
-        args: indexedArgsObject
-    };
-    return (await client.getLogs(filter)).map(e => normalizeLog(eventAbi, e));
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Starts watching the logs for a given event and filtering.
- * @param hre The hardhat runtime environment.
- * @param contract The contract instance.
- * @param eventName The name, or specification, of the event.
- * @param indexedArgs The indexed arguments. They must not be
- * encoded, for they will later be. Also, instead, the callback
- * can be given if no indexed arguments are intended.
- * @param callback The callback, if indexed arguments are given.
- * @returns {Promise<*>} The generated filter (async function).
- */
-async function watchLogs(
-    hre,
-    contract, eventName, indexedArgs,
-    callback
-) {
-    const iface = contract.interface;
-    if (callback === undefined) {
-        callback = indexedArgs;
-        indexedArgs = undefined;
-    }
-    indexedArgs ||= [];
-
-    // Find event details in ABI.
-    const eventFragment = iface.getEvent(eventName);
-    if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
-
-    const filter = [
-        hre.ethers.id(eventFragment.format()),
-        ...encodeTopics(hre, eventFragment, indexedArgs)
-    ];
-    await contract.on(filter, (...args) => {
-        const lastIndex = args.length - 1;
-        callback(normalizeLog(iface.parseLog(args[lastIndex].log)));
-    });
-    return filter;
-}
-
-/**
- * Stops a watch.
- * @param hre The hardhat runtime environment.
- * @param contract The contract instance.
- * @param filter The filter returned by watchLogs, the event name,
- * or the event specification.
- * @param callback The used callback. Optional. If not given, all
- * the listeners will be turned off for the used filter.
- * @returns {Promise<void>}
- */
-async function unWatchLogs(
-    hre, contract, filter, callback
-) {
-    await contract.off(filter, callback);
+    return indexedArgsObject;
 }
 
 /**
@@ -177,5 +156,5 @@ function normalizeLog(abi, log) {
 }
 
 module.exports = {
-    fetchLogs, watchLogs, unWatchLogs
+    fetchLogs, watchLogs
 }
