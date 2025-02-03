@@ -5,7 +5,7 @@ A hardhat plugin providing common tools and functions for both ethers and viem p
 Run this command to install it from NPM:
 
 ```shell
-npm install --save-dev hardhat-common-tools@^1.5.1
+npm install --save-dev hardhat-common-tools@^1.6.0
 ```
 
 # Usage
@@ -130,6 +130,125 @@ The provided methods are the following:
         eip155: true|false, // Whether to avoid a replay-attack.
     })
     ```
+
+# Retrieving and watching logs
+
+This feature deserves its own section because it's a complex topic on itself,
+especially understanding both the event serialization and how different the
+`ethers` and `viem` library handle them. This latter point makes it clear with
+the need of a polyfill.
+
+First, we'll assume we have this contract:
+
+```solidity
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.10;
+
+contract SampleContract {
+    constructor(){}
+
+    event SampleEvent(bytes32 indexed foo, uint256 indexed bar, int256 indexed baz, string data);
+
+    function fireSampleEvent(bytes32 foo, uint256 bar, int256 baz, string memory data) external {
+        emit SampleEvent(foo, bar, baz, data);
+    }
+}
+```
+
+_For curious developers: this example exists in the source code of the sample
+projects, both for `ethers` and `viem`, in this package._
+
+We can, both in `viem` and `ethers`, retrieve a contract instance and list or watch the logs:
+
+```javascript
+// First, get a contract named SampleContract from an ignition module named
+// SampleContractModule. In this case we're using ignition, but we can ensure
+// a contract instance by other means, being them ethers/viem specific, or a
+// common polyfilled way in this package.
+//
+// The only requirement is that, by the end, we have an ethers instance (or a
+// viem instance, respectively) of a contract.
+const contract = await hre.ignition.getDeployedContract("SampleContractModule#SampleContract");
+
+// Retrieve the logs, between block 0 and 100, of the event SampleEvent
+// specifying indexed topics: foo=null (anything), bar=2, baz=-2.
+const logs = await hre.common.getLogs(contract, "SampleEvent", 0, 100, [null, 2, -2]);
+
+// Same, but the object can be a literal object.
+const logs = await hre.common.getLogs(contract, "SampleEvent", 0, 100, {foo: null, bar: 2, baz: -2});
+
+// To retrieve all the logs for that event, the topics are optional.
+const logs = await hre.common.getLogs(contract, "SampleEvent", 0, 100);
+
+// Conflicting ABI definitions for events with same name are still a WIP. This means:
+// - SampleEvent(bytes32,uint256,int256,string) works well in ethers, to resolve conflicts.
+// - SampleEvent(bytes32 indexed foo,uint256 indexed bar,int256 indexed baz,string data) works well in viem.
+// But they're not unified yet.
+const logs = await hre.common.getLogs(contract, "SampleEvent(bytes32,uint256,int256,string)", 0, 100, [null, 2, -2]);
+const logs = await hre.common.getLogs(contract, "SampleEvent(bytes32 indexed foo,uint256 indexed bar,int256 indexed baz,string data)", 0, 100, [null, 2, -2]);
+
+// Undefined or null from/to blocks refer to 0 and "latest". These calls are equivalent:
+const logs = await hre.common.getLogs(contract, "SampleEvent");
+const logs = await hre.common.getLogs(contract, "SampleEvent", 0);
+const logs = await hre.common.getLogs(contract, "SampleEvent", 0, "latest");
+const logs = await hre.common.getLogs(contract, "SampleEvent", null);
+const logs = await hre.common.getLogs(contract, "SampleEvent", null, "latest");
+const logs = await hre.common.getLogs(contract, "SampleEvent", null, null);
+const logs = await hre.common.getLogs(contract, "SampleEvent", 0, null);
+
+// Watching logs, AS LONG AS THE PROVIDER ENDPOINT SUPPORTS WATCHING LOGS (it's not always the case),
+// becomes also easy:
+const unwatch = await hre.common.watchLogs(contract, "SampleEvent", [null, 2, -2], (log) => { console.log(log); });
+
+// The topics support the same syntax as before. This means: also an object is allowed:
+const unwatch = await hre.common.watchLogs(contract, "SampleEvent", {foo: null, bar: 2, baz: -2}, (log) => { console.log(log); });
+
+// The topics are also optional, if no topics are needed:
+const unwatch = await hre.common.watchLogs(contract, "SampleEvent", (log) => { console.log(log); });
+
+// There's also support for conflicting ABI definitions but, as in the
+// getLogs case, it's still a WIP to polyfill them.
+const unwatch = await hre.common.watchLogs(contract, "SampleEvent(bytes32,uint256,int256,string)", [null, 2, -2], (log) => { console.log(log); });
+const unwatch = await hre.common.watchLogs(contract, "SampleEvent(bytes32 indexed foo,uint256 indexed bar,int256 indexed baz,string data)", [null, 2, -2], (log) => { console.log(log); });
+```
+
+The callback will receive all the logs properly.
+
+The structure of a single log entry will look like this in either case, following the lookup example:
+
+```
+{
+    name: "SampleEvent", // The name of the event
+    args: {
+        "0": "0xf5f74b0e3d12e6c52866a99cbb70d761db5ebb7258f39d97971e7cb3483c3493",
+        "1": 2n,
+        "2": -2n,
+        "3": "Hello",
+        foo: "0xf5f74b0e3d12e6c52866a99cbb70d761db5ebb7258f39d97971e7cb3483c3493",
+        bar: 2n,
+        baz: -2n,
+        data: "Hello"
+    },
+    blockNumber: 20n, // or 20n in viem - it's always a BigInt in that library.
+    blockHash: "0x8b0188a37d18b2f4792606709299f316418ce46748591074ad44e00ce7f79ba3",
+    transactionIndex: 0,
+    transactionHash: "0x3cf3b3135570ce29b9950c02af3d9f4b40a680c6f98c9e6fed605063054184ac",
+    logIndex: 0,
+    native: aNativeObject
+}
+```
+
+The `native` object is intentionally not polyfilled. It has the top-level object
+of an event being received in either library (it will be ethers/viem-specific,
+respectively).
+
+To stop watching the events, just do:
+
+```javascript
+unwatch()
+```
+
+from the returned unwatcher function.
 
 # More common functions
 
