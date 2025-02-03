@@ -61,7 +61,7 @@ async function watchLogs(
         onLogs: (logs) => {
             logs.forEach(log => {
                 try {
-                    callback(log);
+                    callback(normalizeLog(eventAbi, log));
                 } catch (e) {
                     console.error(e);
                 }
