@@ -22,7 +22,7 @@ async function fetchLogs(
     // Parse event ABI dynamically.
     let eventAbi = getEventAbi(contract, eventName);
 
-    let indexedArgsObject = normalizeIndexedArgs(indexedArgs || []);
+    let indexedArgsObject = normalizeIndexedArgs(eventAbi, indexedArgs || []);
 
     // Prepare the filter arguments and get the logs.
     const filter = {
@@ -57,7 +57,7 @@ async function watchLogs(
 
     return client.watchEvent({
         address: contract.address, event: eventAbi,
-        args: normalizeIndexedArgs(indexedArgs || []),
+        args: normalizeIndexedArgs(eventAbi, indexedArgs || []),
         onLogs: (logs) => {
             logs.forEach(log => {
                 try {
@@ -103,7 +103,7 @@ function getEventAbi(contract, eventName) {
 }
 
 // Converts the indexed arguments to an object.
-function normalizeIndexedArgs(indexedArgs) {
+function normalizeIndexedArgs(eventAbi, indexedArgs) {
     let indexedArgsObject = {};
     if (Array.isArray(indexedArgs)) {
         // Converting the array indexed args to an object.
