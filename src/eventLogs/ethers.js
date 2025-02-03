@@ -50,7 +50,7 @@ async function fetchLogs(
  * encoded, for they will later be. Also, instead, the callback
  * can be given if no indexed arguments are intended.
  * @param callback The callback, if indexed arguments are given.
- * @returns {Promise<*>} The generated filter (async function).
+ * @returns {Promise<*>} A function to un-watch this watch (async function).
  */
 async function watchLogs(
     hre,
@@ -76,7 +76,7 @@ async function watchLogs(
         const lastIndex = args.length - 1;
         callback(normalizeLog(iface, args[lastIndex].log));
     });
-    return filter;
+    return () => contract.off(filter, callback);
 }
 
 /**
@@ -186,5 +186,5 @@ function encodeIndexedValue(hre, type, value, cannotBeArrayOrNull) {
 }
 
 module.exports = {
-    fetchLogs, watchLogs, unWatchLogs
+    fetchLogs, watchLogs
 }
