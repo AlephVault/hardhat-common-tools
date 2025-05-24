@@ -170,6 +170,15 @@ We can, both in `viem` and `ethers`, retrieve a contract instance and list or wa
 // viem instance, respectively) of a contract.
 const contract = await hre.ignition.getDeployedContract("SampleContractModule#SampleContract");
 
+// To retrieve the logs from a just-executed transaction, this method exists:
+// Assume the function fireSampleEvent(bytes32,uint256,int256,string) exists.
+const tx = await hre.common.send(contract, "fireSampleEvent", ["0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", 1, 1, "Hello"]);
+
+// Then, retrieve the logs only for this transaction in its block.
+const logs = await hre.common.getTransactionLogs(contract, tx, "SampleEvent");
+
+// After that, the following features involve retrieving events from many transactions.
+
 // Retrieve the logs, between block 0 and 100, of the event SampleEvent
 // specifying indexed topics: foo=null (anything), bar=2, baz=-2.
 const logs = await hre.common.getLogs(contract, "SampleEvent", 0, 100, [null, 2, -2]);
