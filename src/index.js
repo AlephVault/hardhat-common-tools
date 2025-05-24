@@ -1,3 +1,5 @@
+import {fetchTransactionLogs} from "./eventLogs/ethers";
+
 const {extendEnvironment} = require("hardhat/config");
 const path = require("path");
 const fs = require("fs");
@@ -130,7 +132,7 @@ async function getDeployedContract(hre, contractId, deploymentId) {
 extendEnvironment((hre) => {
     hre.common ||= {};
     if (hre.ethers) {
-        const {fetchLogs, watchLogs} = require("./eventLogs/ethers");
+        const {fetchLogs, fetchTransactionLogs, watchLogs} = require("./eventLogs/ethers");
 
         hre.common.isAddress = (value) => {
             try {
@@ -185,6 +187,7 @@ extendEnvironment((hre) => {
             return await contract[method](...args);
         }
         hre.common.getLogs = (...args) => fetchLogs(hre, ...args);
+        hre.common.getTransactionLogs = (...args) => fetchTransactionLogs(hre, ...args);
         hre.common.watchLogs = (...args) => watchLogs(hre, ...args);
         hre.common.getContractAddress = (contract) => contract.target;
         hre.common.keccak256 = (text) => hre.ethers.keccak256(hre.ethers.toUtf8Bytes(text));
@@ -202,7 +205,7 @@ extendEnvironment((hre) => {
         }
     } else if (hre.viem) {
         const {isAddress, getContract, keccak256} = require("viem");
-        const {fetchLogs, watchLogs} = require("./eventLogs/viem");
+        const {fetchLogs, fetchTransactionLogs, watchLogs} = require("./eventLogs/viem");
 
         hre.common.isAddress = (value) => isAddress(value, {strict: true});
         hre.common.getAddress = (signer) => signer.account.address;
@@ -274,6 +277,7 @@ extendEnvironment((hre) => {
             return await contract.read[method.split("(")[0]](args);
         }
         hre.common.getLogs = (...args) => fetchLogs(hre, ...args);
+        hre.common.getTransactionLogs = (...args) => fetchTransactionLogs(hre, ...args);
         hre.common.watchLogs = (...args) => watchLogs(hre, ...args);
         hre.common.getContractAddress = (contract) => contract.address;
         hre.common.keccak256 = (text) => keccak256(text);
