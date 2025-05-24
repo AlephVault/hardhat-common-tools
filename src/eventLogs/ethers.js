@@ -1,3 +1,5 @@
+const {parseEventLogs} = require("viem");
+
 /**
  * Gets the logs of a certain event from the contract.
  * @param hre The hardhat runtime environment.
@@ -186,6 +188,24 @@ function encodeIndexedValue(hre, type, value, cannotBeArrayOrNull) {
     throw new Error(`Unsupported indexed type: ${type}`);
 }
 
+/**
+ * Get the logs for a certain event from the contract for a transaction.
+ * @param hre The hardhat runtime environment.
+ * @param contract The contract instance.
+ * @param eventName The name, or specification, of the event.
+ * @param tx The transaction, as returned from hre.common.send (i.e. a Contract Transaction Response).
+ * @param eventName The name of the event.
+ * @returns {Promise<{args: {}, native, name}[]>} The list of normalized events (async function).
+ */
+async function fetchTransactionLogs(hre, contract, {hash}, eventName) {
+    // Here, tx is a string, as returned from hre.common.send().
+    const receipt = await hre.ethers.provider.getTransactionReceipt(hash);
+    const iface = contract.interface;
+    return receipt.logs.map((log) => normalizeLog(iface, log)).filter(
+        ({name, native: {signature}}) => name === eventName || signature === eventName
+    );
+}
+
 module.exports = {
-    fetchLogs, watchLogs
+    fetchLogs, watchLogs, fetchTransactionLogs
 }
