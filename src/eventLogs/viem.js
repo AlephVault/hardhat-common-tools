@@ -1,4 +1,4 @@
-const {parseAbiItem} = require("viem");
+const {parseAbiItem, parseEventLogs} = require("viem");
 
 /**
  * Gets the logs of a certain event from the contract.
@@ -35,7 +35,7 @@ async function fetchLogs(
 }
 
 /**
- * Starts watching the logs for a given event and filtering.
+ * Starts watching the logs for a given event and filtering from the contract.
  * @param hre The hardhat runtime environment.
  * @param contract The contract instance.
  * @param eventName The name, or specification, of the event.
@@ -160,6 +160,28 @@ function normalizeLog(abi, log) {
     }
 }
 
+/**
+ * Get the logs for a certain event from the contract for a transaction.
+ * @param hre The hardhat runtime environment.
+ * @param contract The contract instance.
+ * @param eventName The name, or specification, of the event.
+ * @param tx The transaction, as returned from hre.common.send (i.e. a hash).
+ * @param eventName The name of the event.
+ * @returns {Promise<{args: {}, native, name}[]>} The list of normalized events (async function).
+ */
+async function fetchTransactionLogs(hre, contract, tx, eventName) {
+    // Here, tx is a string, as returned from hre.common.send().
+    const receipt = await (await hre.viem.getPublicClient()).getTransactionReceipt({hash: tx});
+    const logs = receipt.logs;
+    const abi = [getEventAbi(contract, eventName)];
+    const parsedLogs = parseEventLogs({
+        abi, eventName, logs, strict: true
+    });
+    return parsedLogs.map((log) => normalizeLog(
+        abi[0], log
+    ));
+}
+
 module.exports = {
-    fetchLogs, watchLogs
+    fetchLogs, watchLogs, fetchTransactionLogs
 }
