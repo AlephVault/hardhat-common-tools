@@ -1,6 +1,6 @@
 {
   "name": "hardhat-common-tools",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "A hardhat plugin providing common tools and functions for both ethers and viem projects",
   "main": "src/index.js",
   "scripts": {
