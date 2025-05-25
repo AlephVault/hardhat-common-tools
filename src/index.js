@@ -1,5 +1,3 @@
-import {fetchTransactionLogs} from "./eventLogs/ethers";
-
 const {extendEnvironment} = require("hardhat/config");
 const path = require("path");
 const fs = require("fs");
