@@ -104,13 +104,14 @@ async function unWatchLogs(
  * field will still remain specific.
  * @param iface The interface to use for decoding.
  * @param entry The native entry to normalize.
- * @returns {{args: {}, native, name, blockNumber, blockHash, transactionIndex, transactionHash, logIndex}}
+ * @returns {{args: {}, native, name, blockNumber, blockHash, transactionIndex, transactionHash, logIndex}|null}
  * An object with the result, being {args, native, name} where `name` is the name part of the event,
  * `native` is the event itself, and `args` is the set of arguments passed to the event, both by key
- * and by index.
+ * and by index. Returns null if there was no ABI entry that could parse the event.
  */
 function normalizeLog(iface, entry) {
     const log = iface.parseLog(entry);
+    if (!log) return null;
     const argKeys = log.fragment.inputs.map(i => i.name);
     const args = {};
     argKeys.forEach((key, index) => {
@@ -201,7 +202,7 @@ async function fetchTransactionLogs(hre, contract, {hash}, eventName) {
     // Here, tx is a string, as returned from hre.common.send().
     const receipt = await hre.ethers.provider.getTransactionReceipt(hash);
     const iface = contract.interface;
-    return receipt.logs.map((log) => normalizeLog(iface, log)).filter(
+    return receipt.logs.map((log) => normalizeLog(iface, log)).filter((e) => e).filter(
         ({name, native: {signature}}) => name === eventName || signature === eventName
     );
 }

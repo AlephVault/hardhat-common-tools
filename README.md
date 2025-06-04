@@ -5,7 +5,7 @@ A hardhat plugin providing common tools and functions for both ethers and viem p
 Run this command to install it from NPM:
 
 ```shell
-npm install --save-dev hardhat-common-tools@^1.6.0
+npm install --save-dev hardhat-common-tools@^1.7.2
 ```
 
 # Usage
