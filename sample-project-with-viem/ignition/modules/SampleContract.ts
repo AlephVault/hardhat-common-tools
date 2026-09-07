@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-const SampleContractModule = buildModule("SampleContractModule", (m) => {
+export default buildModule("SampleContractModule", (m) => {
   const sampleContract = m.contract("SampleContract", [], {});
 
   m.call(sampleContract, "fireSampleEvent", [
@@ -38,5 +38,3 @@ const SampleContractModule = buildModule("SampleContractModule", (m) => {
 
   return { sampleContract };
 });
-
-export default SampleContractModule;

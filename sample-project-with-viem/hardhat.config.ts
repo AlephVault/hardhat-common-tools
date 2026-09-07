@@ -1,9 +1,8 @@
-import type { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-viem";
-require("..");
+import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
+import { defineConfig } from "hardhat/config";
+import hardhatCommonToolsPlugin from "../src/index.js";
 
-const config: HardhatUserConfig = {
+export default defineConfig({
+  plugins: [hardhatToolboxViemPlugin, hardhatCommonToolsPlugin],
   solidity: "0.8.24",
-};
-
-export default config;
+});

@@ -1,4 +1,4 @@
-const {parseAbiItem, parseEventLogs} = require("viem");
+import {parseAbiItem, parseEventLogs} from "viem";
 
 /**
  * Gets the logs of a certain event from the contract.
@@ -11,13 +11,14 @@ const {parseAbiItem, parseEventLogs} = require("viem");
  * encoded, for they will later be.
  * @returns {Promise<*>} An array of logs (async function).
  */
-async function fetchLogs(
+export async function fetchLogs(
     hre,
     contract, eventName,
     fromBlock, toBlock,
     indexedArgs
 ) {
-    const client = await hre.viem.getPublicClient();
+    const {viem} = await hre.network.getOrCreate();
+    const client = await viem.getPublicClient();
 
     // Parse event ABI dynamically.
     let eventAbi = getEventAbi(contract, eventName);
@@ -45,12 +46,13 @@ async function fetchLogs(
  * @param callback The callback, if indexed arguments are given.
  * @returns {Promise<*>} A function to un-watch this watch (async function).
  */
-async function watchLogs(
+export async function watchLogs(
     hre,
     contract, eventName, indexedArgs,
     callback
 ) {
-    const client = await hre.viem.getPublicClient();
+    const {viem} = await hre.network.getOrCreate();
+    const client = await viem.getPublicClient();
     if (callback === undefined) {
         callback = indexedArgs;
         indexedArgs = undefined;
@@ -169,9 +171,10 @@ function normalizeLog(abi, log) {
  * @param eventName The name of the event.
  * @returns {Promise<{args: {}, native, name}[]>} The list of normalized events (async function).
  */
-async function fetchTransactionLogs(hre, contract, tx, eventName) {
+export async function fetchTransactionLogs(hre, contract, tx, eventName) {
     // Here, tx is a string, as returned from hre.common.send().
-    const receipt = await (await hre.viem.getPublicClient()).getTransactionReceipt({hash: tx});
+    const {viem} = await hre.network.getOrCreate();
+    const receipt = await (await viem.getPublicClient()).getTransactionReceipt({hash: tx});
     const logs = receipt.logs;
     const abi = [getEventAbi(contract, eventName)];
     const parsedLogs = parseEventLogs({
@@ -180,8 +183,4 @@ async function fetchTransactionLogs(hre, contract, tx, eventName) {
     return parsedLogs.map((log) => normalizeLog(
         abi[0], log
     ));
-}
-
-module.exports = {
-    fetchLogs, watchLogs, fetchTransactionLogs
 }

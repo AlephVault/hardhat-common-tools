@@ -6,6 +6,10 @@ contract SampleContract {
 
     event SampleEvent(bytes32 indexed foo, uint256 indexed bar, int256 indexed baz, string data);
 
+    function dumbValue() external pure returns (string memory) {
+        return "dumb";
+    }
+
     function fireSampleEvent(bytes32 foo, uint256 bar, int256 baz, string memory data) external {
         emit SampleEvent(foo, bar, baz, data);
     }

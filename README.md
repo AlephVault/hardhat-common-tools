@@ -5,7 +5,7 @@ A hardhat plugin providing common tools and functions for both ethers and viem p
 Run this command to install it from NPM:
 
 ```shell
-npm install --save-dev hardhat-common-tools@^1.7.2
+npm install --save-dev hardhat-common-tools@^3.0.0
 ```
 
 # Usage
@@ -101,7 +101,7 @@ The provided methods are the following:
 10. Computing a keccak256 over a UTF-8 string.
 
     ```javascript
-    const hash = hre.ignition.keccak256("Hello World");
+    const hash = hre.common.keccak256("Hello World");
     // '0x592fa743889fc7f92ac2a37bb1f5ba1daf2a5c84741ca0e0061d243a2e6707ba'
     ```
 

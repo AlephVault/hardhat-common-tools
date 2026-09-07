@@ -1,5 +1,3 @@
-const {parseEventLogs} = require("viem");
-
 /**
  * Gets the logs of a certain event from the contract.
  * @param hre The hardhat runtime environment.
@@ -11,13 +9,14 @@ const {parseEventLogs} = require("viem");
  * encoded, for they will later be.
  * @returns {Promise<*>} An array of logs (async function).
  */
-async function fetchLogs(
+export async function fetchLogs(
     hre,
     contract, eventName,
     fromBlock, toBlock,
     indexedArgs
 ) {
-    const provider = hre.ethers.provider;
+    const {ethers} = await hre.network.getOrCreate();
+    const provider = ethers.provider;
     const iface = contract.interface;
     indexedArgs ||= [];
 
@@ -26,7 +25,7 @@ async function fetchLogs(
     if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
 
     // Prepare topics array (first topic is event signature).
-    const topics = [hre.ethers.id(eventFragment.format()), ...encodeTopics(hre, eventFragment, indexedArgs)];
+    const topics = [ethers.id(eventFragment.format()), ...encodeTopics(ethers, eventFragment, indexedArgs)];
 
     // Construct the filter.
     const filter = {
@@ -54,11 +53,12 @@ async function fetchLogs(
  * @param callback The callback, if indexed arguments are given.
  * @returns {Promise<*>} A function to un-watch this watch (async function).
  */
-async function watchLogs(
+export async function watchLogs(
     hre,
     contract, eventName, indexedArgs,
     callback
 ) {
+    const {ethers} = await hre.network.getOrCreate();
     const iface = contract.interface;
     if (callback === undefined) {
         callback = indexedArgs;
@@ -71,8 +71,8 @@ async function watchLogs(
     if (!eventFragment) throw new Error(`Event "${eventName}" not found in ABI`);
 
     const filter = [
-        hre.ethers.id(eventFragment.format()),
-        ...encodeTopics(hre, eventFragment, indexedArgs)
+        ethers.id(eventFragment.format()),
+        ...encodeTopics(ethers, eventFragment, indexedArgs)
     ];
     const wrappedCallback = (...args) => {
         const lastIndex = args.length - 1;
@@ -92,7 +92,7 @@ async function watchLogs(
  * the listeners will be turned off for the used filter.
  * @returns {Promise<void>}
  */
-async function unWatchLogs(
+export async function unWatchLogs(
     hre, contract, filter, callback
 ) {
     await contract.off(filter, callback);
@@ -130,14 +130,14 @@ function normalizeLog(iface, entry) {
 }
 
 // Encodes the given values to be used as topics.
-function encodeTopics(hre, eventFragment, indexedArgs) {
+function encodeTopics(ethers, eventFragment, indexedArgs) {
     const topics = [];
     let index = 0;
     for (const param of eventFragment.inputs) {
         if (param.indexed) {
             const value = indexedArgs[eventFragment.name] ?? indexedArgs[index++];
             if (value !== undefined) {
-                topics.push(encodeIndexedValue(hre, param.type, value));
+                topics.push(encodeIndexedValue(ethers, param.type, value));
             } else {
                 topics.push(null);
             }
@@ -157,15 +157,13 @@ for(let j = 1; j <= 32; j++) {
 }
 
 // Encodes an indexed value.
-function encodeIndexedValue(hre, type, value, cannotBeArrayOrNull) {
-    const ethers = hre.ethers;
-
+function encodeIndexedValue(ethers, type, value, cannotBeArrayOrNull) {
     // If array/null are allowed by this point, test
     // for arrays or null values and return appropriately.
     cannotBeArrayOrNull ||= false;
     if (!cannotBeArrayOrNull) {
         if (value === null) return null;
-        if (Array.isArray(value)) return value.map((v) => encodeIndexedValue(type, v, true));
+        if (Array.isArray(value)) return value.map((v) => encodeIndexedValue(ethers, type, v, true));
     }
 
     // By this point, this null check will only occur
@@ -198,15 +196,12 @@ function encodeIndexedValue(hre, type, value, cannotBeArrayOrNull) {
  * @param eventName The name of the event.
  * @returns {Promise<{args: {}, native, name}[]>} The list of normalized events (async function).
  */
-async function fetchTransactionLogs(hre, contract, {hash}, eventName) {
+export async function fetchTransactionLogs(hre, contract, {hash}, eventName) {
     // Here, tx is a string, as returned from hre.common.send().
-    const receipt = await hre.ethers.provider.getTransactionReceipt(hash);
+    const {ethers} = await hre.network.getOrCreate();
+    const receipt = await ethers.provider.getTransactionReceipt(hash);
     const iface = contract.interface;
     return receipt.logs.map((log) => normalizeLog(iface, log)).filter((e) => e).filter(
         ({name, native: {signature}}) => name === eventName || signature === eventName
     );
-}
-
-module.exports = {
-    fetchLogs, watchLogs, fetchTransactionLogs
 }
